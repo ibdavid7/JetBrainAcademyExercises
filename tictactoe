@@ -1,0 +1,228 @@
+package tictactoe;
+
+import java.util.*;
+import java.util.stream.IntStream;
+
+public class Main {
+    public static void main(String[] args) {
+        // write your code here
+        Board board = new Board();
+        board.print();
+        while (board.getState() == Board.State.NOTFINISHED) {
+            board.nextMove();
+            board.print();
+        }
+        System.out.println(board.getState().string);
+
+        //System.out.println(board.getState().string);
+
+    }
+}
+
+class Board {
+    Value[][] board;
+    final int n = 3;
+    Scanner scanner;
+    Value nextMove;
+
+    public Board() {
+
+        board = new Value[n][n];
+
+        this.scanner = new Scanner(System.in);
+        this.nextMove = Value.X;
+        //initiate(readInput());
+        for (Value[] arr : board) {
+            Arrays.fill(arr, Value.Empty);
+        }
+
+
+    }
+
+    public void initiate(String[] inputArr) {
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                switch(inputArr[i * n + j]) {
+                    case "O":
+                        this.board[i][j] = Value.O;
+                        break;
+                    case "X":
+                        this.board[i][j] = Value.X;
+                        break;
+                    case "_":
+                        this.board[i][j] = Value.Empty;
+                        break;
+                    default:
+                        System.out.println("Unknown input value");
+                        break;
+                }
+            }
+        }
+    }
+
+    public String[] readInput() {
+        System.out.print("Enter cells: ");
+        char[] input = this.scanner.nextLine().toCharArray();
+        return IntStream.range(0, input.length)
+                .mapToObj(i -> input[i])
+                .map(String::valueOf)
+                .toArray(String[]::new);
+
+    }
+
+    public void nextMove() {
+        String x = "0";
+        String y = "0";
+        boolean continueAskingInput = true;
+        while (continueAskingInput) {
+            System.out.print("Enter the coordinates: ");
+
+            x = this.scanner.next();
+            y = this.scanner.next();
+
+            if (!x.matches("\\d") || !y.matches("\\d")) {
+                System.out.print("You should enter numbers!");
+            } else if (!(0 < Integer.valueOf(x) && Integer.valueOf(x) < 4)
+                    || !(0 < Integer.valueOf(y) && Integer.valueOf(y) < 4)) {
+                System.out.println("Coordinates should be from 1 to 3!");
+            } else if(board[Math.abs(Integer.valueOf(y) - n)][Integer.valueOf(x) - 1] != Value.Empty) {
+                System.out.println("This cell is occupied! Choose another one!");
+            } else {
+                board[Math.abs(Integer.valueOf(y) - n)][Integer.valueOf(x) - 1] = this.nextMove;
+                if (this.nextMove == Value.X) {
+                    this.nextMove = Value.O;
+                } else {
+                    this.nextMove = Value.X;
+                }
+                continueAskingInput = false;
+            }
+        }
+    }
+
+    public void shuffle() {
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                Random rand = new Random();
+                board[i][j] = rand.nextFloat() < 0.5 ? Value.X : Value.O;
+            }
+        }
+    }
+
+    public void print() {
+
+        System.out.println("--------");
+
+        for (int i = 0; i < n; i++) {
+            System.out.print("| ");
+            for (int j = 0; j < n; j++) {
+                System.out.print(board[i][j].string + " ");
+            }
+            System.out.println("|");
+        }
+
+        System.out.println("---------");
+    }
+
+    public State getState() {
+        int countX = getCount(Value.X);
+        int countO = getCount(Value.O);
+        int countEmpty = getCount(Value.Empty);
+        boolean rowX = getRow(Value.X);   //X has 3 in a row
+        boolean rowO = getRow(Value.O);   //Y has 3 in a row
+
+        //1. Impossible state abs(X - O) >1
+        if (Math.abs(countX - countO) > 1 || rowX && rowO) {
+            return State.IMPOSSIBLE;
+        } else if (rowO) {
+            return State.OWINS;
+        } else if (rowX) {
+            return State.XWINS;
+        } else if (!rowO && !rowX && countEmpty == 0) {
+            return State.DRAW;
+        } else {
+            return State.NOTFINISHED;
+        }
+    }
+
+    public int getCount(Value x) {
+        int count = 0;
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                if (this.board[i][j].equals(x)) {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
+    public boolean getRow(Value value) {
+        //1. all rows; 2. all columns; 3. 2 diagonals
+        //boolean result = false;
+        int countRow = 0;
+        int countCol = 0;
+        int countDiagPrimary = 0;
+        int countDiagSecondary = 0;
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                //1. all rows
+                if (this.board[i][j] == value) {
+                    countRow++;
+                }
+                if (countRow > 2) {
+                    return true;
+                }
+                //2. all columns
+                if (this.board[j][i] == value) {
+                    countCol++;
+                }
+                if (countCol > 2) {
+                    return true;
+                }
+
+            }
+            countRow = 0;
+            countCol = 0;
+            //3. 2 diagonals
+            if (this.board[i][i] == value) {
+                countDiagPrimary++;
+            }
+            if (countDiagPrimary > 2) {
+                return true;
+            }
+            if (this.board[i][n - 1 - i] == value) {
+                countDiagSecondary++;
+            }
+            if (countDiagSecondary > 2) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    enum Value {
+        X("X"),
+        O("O"),
+        Empty("_");
+        String string;
+
+        Value(String string) {
+            this.string = string;
+        }
+    }
+
+    enum State {
+        NOTFINISHED("Game not finished"),
+        DRAW("Draw"),
+        XWINS("X wins"),
+        OWINS("O wins"),
+        IMPOSSIBLE("Impossible");
+
+        String string;
+
+        State(String string) {
+            this.string = string;
+        }
+    }
+
+}
