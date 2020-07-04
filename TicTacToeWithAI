@@ -1,0 +1,573 @@
+package tictactoe;
+
+import javax.swing.plaf.nimbus.State;
+import java.util.*;
+import java.util.stream.IntStream;
+
+public class Main {
+    public static void main(String[] args) {
+        // write your code here
+        Board board = new Board();
+        if (board.readCommand()) {
+            board.print();
+            while (board.getState() == Board.State.NOTFINISHED) {
+                if (board.getNextMove() == Board.Value.X) {
+                    switch (board.getPlayerOne()) {
+                        case "user":
+                            board.userMove();
+                            break;
+                        case "easy":
+                            board.computerRandomMove();
+                            break;
+                        case "medium":
+                            board.computerMediumMove();
+                            break;
+                        case "hard":
+                            board.computerHardMove();
+                            break;
+                    }
+                } else {
+                    switch (board.getPlayerTwo()) {
+                        case "user":
+                            board.userMove();
+                            break;
+                        case "easy":
+                            board.computerRandomMove();
+                            break;
+                        case "medium":
+                            board.computerMediumMove();
+                            break;
+                        case "hard":
+                            board.computerHardMove();
+                            break;
+                    }
+                }
+                board.print();
+            }
+        } else {
+            return;
+        }
+
+        System.out.println(board.getState().string);
+    }
+}
+
+class Board {
+    private Value[][] board;
+    final int n = 3;
+    private Scanner scanner;
+    private Value nextMove;
+    private String playerOne;
+    private String playerTwo;
+
+    public Board() {
+
+        board = new Value[n][n];
+        this.scanner = new Scanner(System.in);
+        this.nextMove = Value.X;
+        //initiate(readInput());
+
+        for (Value[] arr : board) {
+            Arrays.fill(arr, Value.Empty);
+        }
+
+    }
+
+    public Value getNextMove() {
+        return nextMove;
+    }
+
+    public String getPlayerOne() {
+        return playerOne;
+    }
+
+    public String getPlayerTwo() {
+        return playerTwo;
+    }
+
+    public void setNextMove() {
+        if (this.nextMove == Value.X) {
+            this.nextMove = Value.O;
+        } else {
+            this.nextMove = Value.X;
+        }
+    }
+
+    public void move(int i, int j) {
+        this.board[i][j] = this.nextMove;
+        this.setNextMove();
+    }
+
+    public void initiate(String[] inputArr) {
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                switch(inputArr[i * n + j]) {
+                    case "O":
+                        this.board[i][j] = Value.O;
+                        break;
+                    case "X":
+                        this.board[i][j] = Value.X;
+                        break;
+                    case "_":
+                        this.board[i][j] = Value.Empty;
+                        break;
+                    default:
+                        System.out.println("Unknown input value");
+                        break;
+                }
+            }
+        }
+        if (getCount(Value.X) > getCount(Value.O)) {
+            this.nextMove = Value.O;
+        } else {
+            this.nextMove = Value.X;
+        }
+    }
+
+    public Board copy() {
+        Board result = new Board();
+        result.board = Arrays.stream(this.board)
+                .map(el -> el.clone())
+                .toArray($ -> this.board.clone());
+        result.nextMove = this.nextMove;
+        return result;
+    }
+
+    public boolean readCommand() {
+        while (true) {
+            try {
+                String command = this.scanner.next().toLowerCase();
+                if (command.equals("exit")) {
+                    return false;
+                } else if (command.equals("start")) {
+                    String playerOne = this.scanner.next().toLowerCase();
+                    String playerTwo = this.scanner.next().toLowerCase();
+                    if (playerOne.matches("user|easy|medium|hard")
+                            && playerTwo.matches("user|easy|medium|hard")) {
+                        this.playerOne = playerOne;
+                        this.playerTwo = playerTwo;
+                        return true;
+                    }
+                } else {
+                    throw new Exception("Bad parameters");
+                }
+
+            } catch (Exception e) {
+                System.out.println("Bad parameters");
+            }
+            continue;
+        }
+
+
+    }
+
+    public String[] readInput() {
+        System.out.print("Enter cells: ");
+        char[] input = this.scanner.nextLine().toCharArray();
+        return IntStream.range(0, input.length)
+                .mapToObj(i -> input[i])
+                .map(String::valueOf)
+                .toArray(String[]::new);
+
+    }
+
+    public void userMove() {
+        int x = 0;
+        int y = 0;
+        boolean continueAskingInput = true;
+        while (continueAskingInput) {
+            System.out.print("Enter the coordinates: ");
+            try {
+                if (this.scanner.hasNext()) {
+                    String xString = this.scanner.next();
+                    x = Integer.parseInt(xString);
+                } else {
+                    continue;
+                }
+                if (this.scanner.hasNext()) {
+                    String yString = this.scanner.next();
+                    y = Integer.parseInt(yString);
+                } else {
+                    continue;
+                }
+
+            } catch (Exception e) {
+                System.out.println("You should enter numbers!");
+                continue;
+            }
+
+            if (!(0 < Integer.valueOf(x) && Integer.valueOf(x) < 4)
+                    || !(0 < Integer.valueOf(y) && Integer.valueOf(y) < 4)) {
+                System.out.println("Coordinates should be from 1 to 3!");
+            } else if(board[Math.abs(Integer.valueOf(y) - n)][Integer.valueOf(x) - 1] != Value.Empty) {
+                System.out.println("This cell is occupied! Choose another one!");
+            } else {
+                board[Math.abs(Integer.valueOf(y) - n)][Integer.valueOf(x) - 1] = this.nextMove;
+                if (this.nextMove == Value.X) {
+                    this.nextMove = Value.O;
+                } else {
+                    this.nextMove = Value.X;
+                }
+                continueAskingInput = false;
+            }
+        }
+    }
+
+    protected void computerRandomMove() {
+        System.out.printf("Making move level \"%s\"%n", "easy");
+
+        int randSelection = new Random().nextInt(getCount(Value.Empty));
+        System.out.println(randSelection);
+        int count = 0;
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+
+
+                if (this.board[i][j] == Value.Empty) {
+                    if (count == randSelection) {
+                        this.board[i][j] = this.nextMove;
+                        setNextMove();
+                        return;
+                    } else {
+                        count++;
+                    }
+                }
+
+            }
+        }
+    }
+
+    protected void computerMediumMove() {
+        System.out.printf("Making move level \"%s\"%n", "medium");
+        Value value = this.nextMove;
+        Value opponentValue = this.nextMove == Value.X ? Value.O : Value.X;
+        //1. check there's potential winning move
+        int[] arr = this.getPotentialRow(value);
+        //2. check there's potential opponent's winning move
+        int[] arrOpp = this.getPotentialRow(opponentValue);
+
+        //Apply in order of precedence per instructions
+        //1. Apply own winning move
+        if (arr[0] != -1) {
+            this.board[arr[0]][arr[1]] = value;
+            System.out.println("Value: " + value.string + " ; Arr: " + Arrays.toString(arr));
+            setNextMove();
+            //2. Block opponent's winning move
+        } else if (arrOpp[0] != -1) {
+            this.board[arrOpp[0]][arrOpp[1]] = value;
+            System.out.println("Value: " + value.string
+                    + " ; Arr: " + Arrays.toString(arrOpp)
+                    + " ; Arr: " + Arrays.toString(this.getPotentialRow(opponentValue))
+                    + "OppVal: " + opponentValue);
+            setNextMove();
+            //3. Choose next step randomly
+        } else {
+            this.computerRandomMove();
+        }
+    }
+
+    protected void computerHardMove() {
+        System.out.printf("Making move level \"%s\"%n", "hard");
+        State playerStateToWin = this.nextMove == Value.X ? State.XWINS : State.OWINS;
+        State opponentStateToWin = playerStateToWin == State.XWINS ? State.OWINS : State.XWINS;
+        //1. 2D listEmpty of all available slots:
+        List<List<Integer>> listEmpty = new ArrayList<List<Integer>>();
+
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                if (this.board[i][j] == Value.Empty) {
+                    listEmpty.add(Arrays.asList(i, j));
+                }
+            }
+        }
+
+        //2. Loop through each of the empty slots, and use minmax to obtain the score associated with that move, return higest score
+        Move result = new Move();
+        result.i = -1;
+        result.j = -1;
+        result.score = Integer.MIN_VALUE;
+        for (List<Integer> list : listEmpty) {
+            //apply the move
+            this.move(list.get(0), list.get(1));
+            //obtain the value of the move using minimax
+            int score = minmax(this, 0, playerStateToWin, false);
+            //check whether score is highest
+            if (score > result.score) {
+                result.i = list.get(0);
+                result.j = list.get(1);
+                result.score = score;
+            }
+            //reverse the move and restore the board state
+            this.board[list.get(0)][list.get(1)] = Value.Empty;
+            this.setNextMove(); //reverse next player back to original state
+        }
+        //apply the move with the highest score
+        this.board[result.i][result.j] = this.nextMove;
+        this.setNextMove();
+
+    }
+
+    class Move {
+        int i;
+        int j;
+        int score;
+
+    }
+
+    protected static int minmax(Board board, int depth, State playerStateToWin, boolean isMax) {
+        State opponetStateToWin = playerStateToWin == State.XWINS ? State.OWINS : State.XWINS;
+        //1. Base case: check state of the board
+        if (board.getState() == Board.State.DRAW) {
+            return 0;
+        } else if (board.getState() == playerStateToWin) {
+            return 10;
+        } else if (board.getState() == opponetStateToWin) {
+            return -10;
+        } else if (board.getState() == State.IMPOSSIBLE) {
+            throw new IllegalStateException("Illegal state exception");
+        //2. Recursive call
+        } else {
+
+            //3. 2D listEmpty of all available slots:
+            List<List<Integer>> listEmpty = new ArrayList<List<Integer>>();
+
+            for (int i = 0; i < board.n; i++) {
+                for (int j = 0; j < board.n; j++) {
+                    if (board.board[i][j] == Value.Empty) {
+                        listEmpty.add(Arrays.asList(i, j));
+                    }
+                }
+            }
+
+            //4. If player is maximiser:
+            if(isMax) {
+            //5. Loop through each of the empty slots, and use minmax to obtain the value associated with that move
+                int max = Integer.MIN_VALUE;
+                for (List<Integer> listRow : listEmpty) {
+                    //5. copy existing board state and apply the move
+                    Board newBoard = board.copy();
+                    newBoard.move(listRow.get(0), listRow.get(1));
+                    //6. Recursively call minmax on new board to obtain value
+                    max = Math.max(max, minmax(newBoard, depth++, playerStateToWin, !isMax));
+                }
+                //7. return max value of the choices
+                return max;
+            //8. If opponent is optimizing i.e. minimizing player value
+            } else {
+                int min = Integer.MAX_VALUE;
+                for (List<Integer> listRow : listEmpty) {
+                    //9. copy existing board state and apply the move
+                    Board newBoard = board.copy();
+                    newBoard.move(listRow.get(0), listRow.get(1));
+                    //10. Recursively call minmax on new board to obtain value
+                    min = Math.min(min, minmax(newBoard, depth++, playerStateToWin, !isMax));
+                }
+                //11. return max value of the choices
+                return min;
+            }
+        }
+    }
+
+    public int[] getPotentialRow(Value value) {
+        //1. all rows; 2. all columns; 3. 2 diagonals
+        //potential match is 2x value and 1x empty
+        int countRow = 0;
+        int countCol = 0;
+        int countRowEmpty = 0;
+        int countColEmpty = 0;
+        int countDiagPriEmpty = 0;
+        int countDiagSecEmpty = 0;
+        int countDiagPrimary = 0;
+        int countDiagSecondary = 0;
+        int[] notFound = {-1, -1};
+        int[] arrPotentialDiaPri = new int[2];
+        int[] arrPotentialDiaSec = new int[2];
+
+        for (int i = 0; i < n; i++) {
+            int[] arrPotentialRow = new int[2];
+            int[] arrPotentialCol = new int[2];
+
+            for (int j = 0; j < n; j++) {
+                //1. all rows
+                if (this.board[i][j] == value) {
+                    countRow++;
+                }
+                if (this.board[i][j] == Value.Empty) {
+                    countRowEmpty++;
+                    arrPotentialRow[0] = i;
+                    arrPotentialRow[1] = j;
+                }
+                if (countRow == 2 && countRowEmpty == 1) {
+                    return arrPotentialRow;
+                }
+                //2. all columns
+                if (this.board[j][i] == value) {
+                    countCol++;
+                }
+                if (this.board[j][i] == Value.Empty) {
+                    countColEmpty++;
+                    arrPotentialCol[0] = j;
+                    arrPotentialCol[1] = i;
+                }
+                if (countCol == 2 && countColEmpty == 1) {
+                    return arrPotentialCol;
+                }
+            }
+            countRow = 0;
+            countCol = 0;
+            countRowEmpty = 0;
+            countColEmpty = 0;
+            //3. 2 diagonals
+            if (this.board[i][i] == value) {
+                countDiagPrimary++;
+            }
+            if (this.board[i][i] == Value.Empty) {
+                countDiagPriEmpty++;
+                arrPotentialDiaPri[0] = i;
+                arrPotentialDiaPri[1] = i;
+            }
+            if (countDiagPrimary == 2 & countDiagPriEmpty == 1) {
+                return arrPotentialDiaPri;
+            }
+            if (this.board[i][n - 1 - i] == value) {
+                countDiagSecondary++;
+            }
+            if (this.board[i][n - 1 - i] == Value.Empty) {
+                countDiagSecEmpty++;
+                arrPotentialDiaSec[0] = i;
+                arrPotentialDiaSec[1] = n - 1 - i;
+            }
+            if (countDiagSecondary == 2 && countDiagSecEmpty == 1) {
+                return arrPotentialDiaSec;
+            }
+        }
+        return notFound;
+    }
+
+    public void shuffle() {
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                Random rand = new Random();
+                board[i][j] = rand.nextFloat() < 0.5 ? Value.X : Value.O;
+            }
+        }
+    }
+
+    public void print() {
+
+        System.out.println("--------");
+
+        for (int i = 0; i < n; i++) {
+            System.out.print("| ");
+            for (int j = 0; j < n; j++) {
+                System.out.print(board[i][j].string + " ");
+            }
+            System.out.println("|");
+        }
+
+        System.out.println("---------");
+    }
+
+    public State getState() {
+        int countX = getCount(Value.X);
+        int countO = getCount(Value.O);
+        int countEmpty = getCount(Value.Empty);
+        boolean rowX = getRow(Value.X);   //X has 3 in a row
+        boolean rowO = getRow(Value.O);   //Y has 3 in a row
+
+        //1. Impossible state abs(X - O) >1
+        if (Math.abs(countX - countO) > 1 || rowX && rowO) {
+            return State.IMPOSSIBLE;
+        } else if (rowO) {
+            return State.OWINS;
+        } else if (rowX) {
+            return State.XWINS;
+        } else if (countEmpty == 0) {
+            return State.DRAW;
+        } else {
+            return State.NOTFINISHED;
+        }
+    }
+
+    public int getCount(Value x) {
+        int count = 0;
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                if (this.board[i][j].equals(x)) {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
+    public boolean getRow(Value value) {
+        //1. all rows; 2. all columns; 3. 2 diagonals
+        //boolean result = false;
+        int countRow = 0;
+        int countCol = 0;
+        int countDiagPrimary = 0;
+        int countDiagSecondary = 0;
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                //1. all rows
+                if (this.board[i][j] == value) {
+                    countRow++;
+                }
+                if (countRow > 2) {
+                    return true;
+                }
+                //2. all columns
+                if (this.board[j][i] == value) {
+                    countCol++;
+                }
+                if (countCol > 2) {
+                    return true;
+                }
+
+            }
+            countRow = 0;
+            countCol = 0;
+            //3. 2 diagonals
+            if (this.board[i][i] == value) {
+                countDiagPrimary++;
+            }
+            if (countDiagPrimary > 2) {
+                return true;
+            }
+            if (this.board[i][n - 1 - i] == value) {
+                countDiagSecondary++;
+            }
+            if (countDiagSecondary > 2) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    enum Value {
+        X("X"),
+        O("O"),
+        Empty("_");
+        String string;
+
+        Value(String string) {
+            this.string = string;
+        }
+    }
+
+    enum State {
+        NOTFINISHED("Game not finished"),
+        DRAW("Draw"),
+        XWINS("X wins"),
+        OWINS("O wins"),
+        IMPOSSIBLE("Impossible");
+
+        String string;
+
+        State(String string) {
+            this.string = string;
+        }
+    }
+
+}
